@@ -95,10 +95,10 @@ class MergeRequestManager(ListMixin, RESTManager):
         "deployed_after",
     )
     _types = {
-        "approver_ids": types.ListAttribute,
-        "approved_by_ids": types.ListAttribute,
-        "in": types.ListAttribute,
-        "labels": types.ListAttribute,
+        "approver_ids": types.ArrayAttribute,
+        "approved_by_ids": types.ArrayAttribute,
+        "in": types.CommaSeparatedListAttribute,
+        "labels": types.CommaSeparatedListAttribute,
     }
 
 
@@ -133,9 +133,9 @@ class GroupMergeRequestManager(ListMixin, RESTManager):
         "wip",
     )
     _types = {
-        "approver_ids": types.ListAttribute,
-        "approved_by_ids": types.ListAttribute,
-        "labels": types.ListAttribute,
+        "approver_ids": types.ArrayAttribute,
+        "approved_by_ids": types.ArrayAttribute,
+        "labels": types.CommaSeparatedListAttribute,
     }
 
 
@@ -450,10 +450,10 @@ class ProjectMergeRequestManager(CRUDMixin, RESTManager):
         "wip",
     )
     _types = {
-        "approver_ids": types.ListAttribute,
-        "approved_by_ids": types.ListAttribute,
-        "iids": types.ListAttribute,
-        "labels": types.ListAttribute,
+        "approver_ids": types.ArrayAttribute,
+        "approved_by_ids": types.ArrayAttribute,
+        "iids": types.ArrayAttribute,
+        "labels": types.CommaSeparatedListAttribute,
     }
 
     def get(

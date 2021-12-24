@@ -290,7 +290,7 @@ class GroupManager(CRUDMixin, RESTManager):
             "shared_runners_setting",
         ),
     )
-    _types = {"avatar": types.ImageAttribute, "skip_groups": types.ListAttribute}
+    _types = {"avatar": types.ImageAttribute, "skip_groups": types.ArrayAttribute}
 
     def get(self, id: Union[str, int], lazy: bool = False, **kwargs: Any) -> Group:
         return cast(Group, super().get(id=id, lazy=lazy, **kwargs))
@@ -350,7 +350,7 @@ class GroupSubgroupManager(ListMixin, RESTManager):
         "with_custom_attributes",
         "min_access_level",
     )
-    _types = {"skip_groups": types.ListAttribute}
+    _types = {"skip_groups": types.ArrayAttribute}
 
 
 class GroupDescendantGroup(RESTObject):

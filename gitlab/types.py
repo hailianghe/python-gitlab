@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, Tuple, TYPE_CHECKING
 
 
 class GitlabAttribute(object):
@@ -31,8 +31,14 @@ class GitlabAttribute(object):
     def get_for_api(self) -> Any:
         return self._value
 
+    def get_as_tuple_list(self, *, key: str) -> List[Tuple[str, Any]]:
+        return [(key, self._value)]
 
-class ListAttribute(GitlabAttribute):
+
+class ArrayAttribute(GitlabAttribute):
+    """To support `array` types as documented in
+    https://docs.gitlab.com/ee/api/#array"""
+
     def set_from_cli(self, cli_value: str) -> None:
         if not cli_value.strip():
             self._value = []
@@ -48,10 +54,45 @@ class ListAttribute(GitlabAttribute):
             assert isinstance(self._value, list)
         return ",".join([str(x) for x in self._value])
 
+    def get_as_tuple_list(self, *, key: str) -> List[Tuple[str, str]]:
+        if isinstance(self._value, str):
+            return [(f"{key}[]", self._value)]
+
+        if TYPE_CHECKING:
+            assert isinstance(self._value, list)
+        return [(f"{key}[]", str(value)) for value in self._value]
+
+
+class CommaSeparatedListAttribute(GitlabAttribute):
+    """For values which are sent to the server as a Comma Separated Values
+    (CSV) string.  We allow them to be specified as a list and we convert it
+    into a CSV"""
+
+    def set_from_cli(self, cli_value: str) -> None:
+        if not cli_value.strip():
+            self._value = []
+        else:
+            self._value = [item.strip() for item in cli_value.split(",")]
+
+    def get_for_api(self) -> str:
+        # Do not comma-split single value passed as string
+        if isinstance(self._value, str):
+            return self._value
+
+        if TYPE_CHECKING:
+            assert isinstance(self._value, list)
+        return ",".join([str(x) for x in self._value])
+
+    def get_as_tuple_list(self, *, key: str) -> List[Tuple[str, str]]:
+        return [(key, self.get_for_api())]
+
 
 class LowercaseStringAttribute(GitlabAttribute):
     def get_for_api(self) -> str:
         return str(self._value).lower()
+
+    def get_as_tuple_list(self, *, key: str) -> List[Tuple[str, str]]:
+        return [(key, self.get_for_api())]
 
 
 class FileAttribute(GitlabAttribute):

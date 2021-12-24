@@ -80,12 +80,12 @@ class ApplicationSettingsManager(GetWithoutIdMixin, UpdateMixin, RESTManager):
         ),
     )
     _types = {
-        "asset_proxy_allowlist": types.ListAttribute,
-        "disabled_oauth_sign_in_sources": types.ListAttribute,
-        "domain_allowlist": types.ListAttribute,
-        "domain_denylist": types.ListAttribute,
-        "import_sources": types.ListAttribute,
-        "restricted_visibility_levels": types.ListAttribute,
+        "asset_proxy_allowlist": types.ArrayAttribute,
+        "disabled_oauth_sign_in_sources": types.ArrayAttribute,
+        "domain_allowlist": types.ArrayAttribute,
+        "domain_denylist": types.ArrayAttribute,
+        "import_sources": types.ArrayAttribute,
+        "restricted_visibility_levels": types.ArrayAttribute,
     }
 
     @exc.on_http_error(exc.GitlabUpdateError)
