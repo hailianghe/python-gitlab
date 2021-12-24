@@ -23,10 +23,8 @@ import requests
 import requests.utils
 from requests_toolbelt.multipart.encoder import MultipartEncoder  # type: ignore
 
-import gitlab.config
-import gitlab.const
-import gitlab.exceptions
-from gitlab import utils
+from . import config as gl_config
+from . import const, exceptions, utils
 
 REDIRECT_MSG = (
     "python-gitlab detected a {status_code} ({reason!r}) redirection. You must update "
@@ -72,7 +70,7 @@ class Gitlab(object):
         per_page: Optional[int] = None,
         pagination: Optional[str] = None,
         order_by: Optional[str] = None,
-        user_agent: str = gitlab.const.USER_AGENT,
+        user_agent: str = const.USER_AGENT,
         retry_transient_errors: bool = False,
     ) -> None:
 
@@ -109,9 +107,9 @@ class Gitlab(object):
             raise ModuleNotFoundError(name=f"gitlab.v{self._api_version}.objects")
         # NOTE: We must delay import of gitlab.v4.objects until now or
         # otherwise it will cause circular import errors
-        import gitlab.v4.objects
+        from .v4 import objects as v4_objects
 
-        objects = gitlab.v4.objects
+        objects = v4_objects
         self._objects = objects
 
         self.broadcastmessages = objects.BroadcastMessageManager(self)
@@ -201,9 +199,9 @@ class Gitlab(object):
             raise ModuleNotFoundError(name=f"gitlab.v{self._api_version}.objects")
         # NOTE: We must delay import of gitlab.v4.objects until now or
         # otherwise it will cause circular import errors
-        import gitlab.v4.objects
+        from .v4 import objects as v4_objects
 
-        self._objects = gitlab.v4.objects
+        self._objects = v4_objects
 
     @property
     def url(self) -> str:
@@ -236,7 +234,7 @@ class Gitlab(object):
         Raises:
             gitlab.config.GitlabDataError: If the configuration is not correct.
         """
-        config = gitlab.config.GitlabConfigParser(
+        config = gl_config.GitlabConfigParser(
             gitlab_id=gitlab_id, config_files=config_files
         )
         return cls(
@@ -289,7 +287,7 @@ class Gitlab(object):
 
         return cast(str, self._server_version), cast(str, self._server_revision)
 
-    @gitlab.exceptions.on_http_error(gitlab.exceptions.GitlabVerifyError)
+    @exceptions.on_http_error(exceptions.GitlabVerifyError)
     def lint(self, content: str, **kwargs: Any) -> Tuple[bool, List[str]]:
         """Validate a gitlab CI configuration.
 
@@ -310,7 +308,7 @@ class Gitlab(object):
             assert not isinstance(data, requests.Response)
         return (data["status"] == "valid", data["errors"])
 
-    @gitlab.exceptions.on_http_error(gitlab.exceptions.GitlabMarkdownError)
+    @exceptions.on_http_error(exceptions.GitlabMarkdownError)
     def markdown(
         self, text: str, gfm: bool = False, project: Optional[str] = None, **kwargs: Any
     ) -> str:
@@ -337,7 +335,7 @@ class Gitlab(object):
             assert not isinstance(data, requests.Response)
         return data["html"]
 
-    @gitlab.exceptions.on_http_error(gitlab.exceptions.GitlabLicenseError)
+    @exceptions.on_http_error(exceptions.GitlabLicenseError)
     def get_license(self, **kwargs: Any) -> Dict[str, Any]:
         """Retrieve information about the current license.
 
@@ -356,7 +354,7 @@ class Gitlab(object):
             return result
         return {}
 
-    @gitlab.exceptions.on_http_error(gitlab.exceptions.GitlabLicenseError)
+    @exceptions.on_http_error(exceptions.GitlabLicenseError)
     def set_license(self, license: str, **kwargs: Any) -> Dict[str, Any]:
         """Add a new license.
 
@@ -447,7 +445,7 @@ class Gitlab(object):
             The base URL
         """
         if not url:
-            return gitlab.const.DEFAULT_URL
+            return const.DEFAULT_URL
 
         return url.rstrip("/")
 
@@ -481,7 +479,7 @@ class Gitlab(object):
             if item.request.method == "GET":
                 continue
             target = item.headers.get("location")
-            raise gitlab.exceptions.RedirectError(
+            raise exceptions.RedirectError(
                 REDIRECT_MSG.format(
                     status_code=item.status_code,
                     reason=item.reason,
@@ -636,13 +634,13 @@ class Gitlab(object):
                 pass
 
             if result.status_code == 401:
-                raise gitlab.exceptions.GitlabAuthenticationError(
+                raise exceptions.GitlabAuthenticationError(
                     response_code=result.status_code,
                     error_message=error_message,
                     response_body=result.content,
                 )
 
-            raise gitlab.exceptions.GitlabHttpError(
+            raise exceptions.GitlabHttpError(
                 response_code=result.status_code,
                 error_message=error_message,
                 response_body=result.content,
@@ -688,7 +686,7 @@ class Gitlab(object):
             try:
                 return result.json()
             except Exception as e:
-                raise gitlab.exceptions.GitlabParsingError(
+                raise exceptions.GitlabParsingError(
                     error_message="Failed to parse the server message"
                 ) from e
         else:
@@ -785,7 +783,7 @@ class Gitlab(object):
             if result.headers.get("Content-Type", None) == "application/json":
                 return result.json()
         except Exception as e:
-            raise gitlab.exceptions.GitlabParsingError(
+            raise exceptions.GitlabParsingError(
                 error_message="Failed to parse the server message"
             ) from e
         return result
@@ -833,7 +831,7 @@ class Gitlab(object):
         try:
             return result.json()
         except Exception as e:
-            raise gitlab.exceptions.GitlabParsingError(
+            raise exceptions.GitlabParsingError(
                 error_message="Failed to parse the server message"
             ) from e
 
@@ -853,7 +851,7 @@ class Gitlab(object):
         """
         return self.http_request("delete", path, **kwargs)
 
-    @gitlab.exceptions.on_http_error(gitlab.exceptions.GitlabSearchError)
+    @exceptions.on_http_error(exceptions.GitlabSearchError)
     def search(
         self, scope: str, search: str, **kwargs: Any
     ) -> Union["GitlabList", List[Dict[str, Any]]]:
@@ -929,7 +927,7 @@ class GitlabList(object):
         try:
             self._data: List[Dict[str, Any]] = result.json()
         except Exception as e:
-            raise gitlab.exceptions.GitlabParsingError(
+            raise exceptions.GitlabParsingError(
                 error_message="Failed to parse the server message"
             ) from e
 
